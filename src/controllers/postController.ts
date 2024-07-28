@@ -3,7 +3,6 @@ import cloudinary from "../config/cloudinary";
 import { Post } from "../models/Post";
 import { Tag } from "../models/Tag";
 
-// Controller to create a new post
 export const createPost = async (
   req: Request,
   res: Response,
@@ -16,7 +15,7 @@ export const createPost = async (
 
     if (req.file) {
       try {
-        // Upload image to Cloudinary
+        // Uploading image to Cloudinary
         const result = await new Promise<any>((resolve, reject) => {
           cloudinary.uploader
             .upload_stream({ resource_type: "image" }, (error, result) => {
@@ -40,7 +39,6 @@ export const createPost = async (
       ? tags.split(",").map((tag) => tag.trim().replace(/["']/g, ""))
       : [];
 
-    // Convert tag names to ObjectIds
     const tagIds = await Promise.all(
       tagArray.map(async (tagName: string) => {
         let tag = await Tag.findOne({ name: tagName });
@@ -52,7 +50,7 @@ export const createPost = async (
       })
     );
 
-    // Create a new post
+    // Creating a new post
     const post = new Post({
       title,
       desc,
@@ -75,7 +73,6 @@ export const getPosts = async (req: Request, res: Response) => {
   try {
     const { sort, page = 1, limit = 10, keyword, tag } = req.query;
 
-    // Define allowed query parameters
     const allowedParams = ["sort", "page", "limit", "keyword", "tag"];
 
     const queryParams = Object.keys(req.query);
@@ -84,15 +81,12 @@ export const getPosts = async (req: Request, res: Response) => {
     );
 
     if (invalidParams.length > 0) {
-      return res
-        .status(400)
-        .json({
-          error: "BAD_REQUEST",
-          message: `Invalid query parameters: ${invalidParams.join(", ")}`,
-        });
+      return res.status(400).json({
+        error: "BAD_REQUEST",
+        message: `Invalid query parameters: ${invalidParams.join(", ")}`,
+      });
     }
 
-    // Initialize filter object
     const filter: any = {};
     if (keyword) {
       filter.$or = [
@@ -101,18 +95,16 @@ export const getPosts = async (req: Request, res: Response) => {
       ];
     }
     if (tag) {
-      // Fetch tag object from the database by name
       const tagObj = await Tag.findOne({
         name: { $regex: new RegExp(`^${tag}$`, "i") },
       });
       if (tagObj) {
         filter.tags = { $in: [tagObj._id] };
       } else {
-        return res.json([]); // Return empty array if tag does not exist
+        return res.json([]);
       }
     }
 
-    // Initialized the sorting option
     let sortOption: { [key: string]: 1 | -1 } = {};
     if (sort) {
       const sortField = sort as string;
